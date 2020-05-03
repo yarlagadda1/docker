@@ -1,0 +1,27 @@
+Find the ID of the container that you would like to move.
+------------
+docker ps -a
+------------
+Exporting sdfsasdfsd ID.
+Commit changes and save the container to an image called mynewimage.
+-------------------------------------
+docker commit sdfsasdfsd mynewimage
+-------------------------------------
+Save the mynewimage image to a tar file
+--------------------------------------------
+docker save mynewimage > /tmp/mynewimage.tar
+--------------------------------------------
+Copy the mynewimage.tar file to your new Docker instance
+---------------------------------
+docker load < /tmp/mynewimage.tar
+---------------------------------
+If you don’t want to use STDIN/STDOUT use the following:
+-------------------------
+docker save -o ~/image.tar
+docker load -i ~/image.tar
+-------------------------
+
+  save works with Docker images. It saves everything needed to build a container from scratch. Use this command if you want to share an image with others.
+  load works with Docker images. Use this command if you want to run an image exported with save. Unlike pull, which requires connecting to a Docker registry, load can import from anywhere (e.g. a file system, URLs).
+  export works with Docker containers, and it exports a snapshot of the container’s file system. Use this command if you want to share or back up the result of building an image.
+  import works with the file system of an exported container, and it imports it as a Docker image. Use this command if you have an exported file system you want to explore or use as a layer for a new image.
