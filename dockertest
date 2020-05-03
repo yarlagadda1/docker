@@ -1,0 +1,12 @@
+docker version
+docker images (or) docker image ls
+docker ps  (or) docker container ps
+docker run hello-world
+docker ps -a
+docker run docker/whalesay cowsay Hello there!
+The first time you run a software image, the docker command looks for it on your local system.
+If the image isn’t there, then docker gets it from the hub.
+-----------------------------------------------------
+docker pull docker/whalesay    ***Pulls the image
+docker run -itd  --name walesay  docker/whalesay
+-----------------------------------------------------
