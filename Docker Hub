@@ -1,0 +1,27 @@
+Sign up for a docker hub account: In your web browser: https://hub.docker.com/
+This account is also valid for docker store.
+Verify your email address and add a new repository.
+docker-whale’ is coming next.
+
+‘tag’ and ‘push’ image to your docker hub account.
+Run ‘docker images’ command to list all images.
+We will use this Image ID to tag our docker-whale image.
+Tag the ‘docker-whale’ image using the ‘docker tag’ command and the image ID.
+docker tag <image-id of docker-image> <your dockerhub username>/docker-image:latest.
+If you use ‘docker images’ command to list images, you shall see your dockerhub username against docker-image you tagged.
+Push your tagged image to Docker Hub, using the ‘docker push’ command.
+
+docker push <your dockerhub username>/docker-image:latest.
+
+Go back to the Docker Hub website to see the newly-pushed image.
+
+Pull your new image from docker hub
+Use ‘docker images’ to list all your local images
+Let’s remove all versions of docker-whale image on our local system
+docker rmi -f <Image ID of docker>
+
+When you use ‘docker run’ it automatically downloads (pulls) images that don’t yet exist locally,
+creates a container, and starts it.
+Use the following command to pull and run the ‘docker-image’, substituting your Docker Hub username.
+
+docker run <your dockerhub username>/docker-image
