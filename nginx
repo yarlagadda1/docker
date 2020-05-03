@@ -1,0 +1,34 @@
+yum update -y
+yum install xfsprogs -y
+yum install lvm2 -y
+yum install wget curl openssl -y
+pvcreate /dev/xvdb /dev/xvdb
+vgcreate VolGroup01 /dev/xvdb
+lvcreate -L 9G -n jenkinsvol VolGroup01
+lvcreate -L 9G -n nginxvol  VolGroup01
+mkfs -t xfs  /dev/mapper/VolGroup01-jenkinsvol
+mkfs -t xfs  /dev/mapper/VolGroup01-nginxvol
+mkdir -p /jenkins
+mkdir -p /nginx
+echo '/dev/mapper/VolGroup01-jenkinsvol     /jenkins        xfs    defaults 0 0'>> /etc/fstab
+echo '/dev/mapper/VolGroup01-nginxvol       /nginx          xfs    defaults 0 0'>> /etc/fstab
+mount -a
+----------------------------------------------------------------------------------------------
+yum list |grep java
+yum install java-1.8.0-openjdk -y
+----------------------------------------------------------------------------------------------
+cd /etc/yum.repos.d/
+ls -al
+yum repolist -v  |grep  Repo-name
+
+dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
+yum makecache 
+dnf -y  install docker-ce --nobest
+sudo usermod -aG docker ec2-user
+systemctl enable --now docker
+systemctl status  docker
+---------------------------------------------------------------------------------------------
+curl -L https://github.com/docker/compose/releases/download/1.25.0/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose
+chmod +x /usr/local/bin/docker-compose
+docker-compose --version
+-------------------------------------------------------------------------------------------------
