@@ -1,0 +1,56 @@
+Docker Swarm is a native clustering tool for Docker containers that can be used to manage a cluster of Docker nodes as a single virtual system. Docker Swarm allows you to add or subtract container iterations as computing demands change. Docker Swarm consists of two main components Manager node and Worker node. Manager node used for handling cluster management tasks such as, maintaining cluster state, scheduling services and serving swarm mode HTTP API endpoints. Worker node is a instance of Docker engine that can be used to execute container. The Swarm manager allows you to create a primary manager instance and multiple replica instances in case the primary instance fails. You can deploy manager and worker nodes at runtime in Docker engine's Swarm mode.
+
+/etc/hosts
+
+192.168.0.102  managernode
+192.168.0.103  workernode1
+192.168.0.104  workernode2
+
+You can do this by running the following command on each node one by one:
+
+Manager node:
+
+hostnamectl set-hostname managernode
+
+Worker node1:
+
+hostnamectl set-hostname workernode1
+
+Worker node2
+
+hostnamectl set-hostname workernode2
+
+Install Docker Engine
+
+Next, you will need to install Docker Community Edition on all the nodes. By default, the latest version of the Docker CE is not available in CentOS 7 repository. So you will need to add the Docker CE repository to your system.
+
+You can do this by running the following command on all the nodes:
+
+wget https://download.docker.com/linux/centos/docker-ce.repo -O /etc/yum.repos.d/docker.repo
+
+Once the Docker repository is installed, run the following command to install Docker CE:
+
+yum install docker-ce –y
+
+Next, start Docker service and enable it to start on boot using the following command:
+
+systemctl start docker
+systemctl enable docker
+
+Configure Firewall
+
+Next, you will need to open ports 7946, 4789, 2376, 2377 and 80 on the firewall for a swarm cluster to work properly.
+
+Run the following command on all the nodes:
+
+firewall-cmd --permanent --add-port=2376/tcp
+firewall-cmd --permanent --add-port=2377/tcp
+firewall-cmd --permanent --add-port=7946/tcp
+firewall-cmd --permanent --add-port=80/tcp
+firewall-cmd --permanent --add-port=7946/udp
+firewall-cmd --permanent --add-port=4789/udp
+
+Finally, reload the firewall and Docker service to apply all the changes:
+
+firewall-cmd --reload
+systemctl restart docker
