@@ -1,0 +1,95 @@
+Stop containers and removes containers created by docker-compose up:
+	docker-compose down -t 0 --remove-orphans 
+So stop and prune all the containers you do not need running.
+	docker stop $(docker ps -a -q) #stop ALL containers
+To now remove all containers, run
+	docker rm -f $(docker ps -a -q) # remove ALL containers
+To remove all the images, run
+	docker rmi $(docker images -q) -f
+-----------------------------------
+tmpfs   :::     docker-compose.yml
+-----------------------------------
+    version: "3.7"
+	services:
+	alpine:
+		image: alpine:3.8
+		command: sleep 600
+		tmpfs:
+		 - /my-run:size=10M
+		 - /my-app-tmp:size=20M
+    docker-compose up -d -t 0      
+    docker exec -it compose-tuts_alpine_1 /bin/sh
+    df -h /my*
+	dd if=/dev/zero of=/my-run/output.dat
+	df -h /my*
+-----------------------------------	
+env_file and environment
+-----------------------------------
+    myvars.env
+
+	ENV_VAR_A=1
+	ENV_VAR_B=10
+	ENV_VAR_C=apple
+	ENV_VAR_F=CentOS 
+
+	mynewvars.env
+
+	ENV_VAR_A=2
+	ENV_VAR_C=pear
+	ENV_VAR_D=Docker 
+
+	For the 3rd file, to save you some typing, just cut and paste the text below to your shell prompt:
+
+	cat <<EOT >> mybestvars.env
+	ENV_VAR_A=3
+	ENV_VAR_B=333
+	ENV_VAR_E=Kubernetes 
+	EOT	
+
+ docker-compose.yml
+ 
+	version: "3.7"
+	services:
+	  alpine:
+
+		image: alpine:3.8
+
+		command: sleep 600
+
+		env_file:
+		  - myvars.env
+		  - mynewvars.env
+		  - mybestvars.env
+
+		environment:
+		  - ENV_VAR_A=42
+		  - ENV_VAR_E=Apache web server
+		  
+    docker-compose up -d -t 0 
+	docker exec -it compose-tuts_alpine_1 /bin/sh
+------------
+healthcheck	
+------------
+docker-compose.yml
+
+version: "3.7"
+services:
+  alpine:
+
+    image: alpine:3.8
+
+    command: sleep 600
+
+    healthcheck:
+      test: exit 0
+      interval: 1s
+      timeout: 1s
+      retries: 3
+      start_period: 0s
+	  
+docker-compose up -d -t 0
+docker ps -a	  
+ change test: exit 1
+ docker-compose up -d -t 0
+docker ps -a	
+ 
