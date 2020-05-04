@@ -1,23 +1,149 @@
+===============
 Create a Swarm
-
-Next, you will need to initialize the swarm on the Manager node. You can do this by running docker swarm init command. This command will make your node as a manager node and advertising it's IP:
+===============
+You will need to initialize the swarm on the Manager node. You can do this by running docker swarm init command.
+This command will make your node as a manager node and advertising it's IP:
 
 --------------------------------------------------
 docker swarm init --advertise-addr 192.168.0.102
 --------------------------------------------------
-
 You should see the following output:
-
 Swarm initialized: current node (viwovkb0bk0kxlk98r78apopo) is now a manager.
-
 To add a worker to this swarm, run the following command:
 ------------------------------------------------------------------------------------------------------------------------
-    docker swarm join --token SWMTKN-1-3793hvb71g0a6ubkgq8zgk9w99hlusajtmj5aqr3n2wrhzzf8z-    1s38lymnir13hhso1qxt5pqru 192.168.0.102:2377
+docker swarm join --token SWMTKN-1-3793hvb71g0a6ubkgq8zgk9w99hlusajtmj5aqr3n2wrhzzf8z-    1s38lymnir13hhso1qxt5pqru 192.168.0.102:2377
 --------------------------------------------------------------------------------------------------------------------------
 docker node ls
 docker  ps -a
 To add a manager to this swarm, run 'docker swarm join-token manager' and follow the instructions.
 ===========================================================================================================================
+Join the Worker nodes to the Manager node
+Manager node is now ready. Next, you will need to add Worker node to the Manager node.
+You can do this by running docker swarm join command on both Worker node as follows:
+---------------------------------------------------------------------------------------------------------------------------------
+docker swarm join --token SWMTKN-1-3793hvb71g0a6ubkgq8zgk9w99hlusajtmj5aqr3n2wrhzzf8z-1s38lymnir13hhso1qxt5pqru 192.168.0.102:2377
+---------------------------------------------------------------------------------------------------------------------------------
+Output:
+
+This node joined a swarm as a worker.
+
+On the manager node, run the following command to check the node status, whether the nodes are active or not:
+
+docker node ls
+
+If everything went fine, you should see the following output:
+
+ID                            HOSTNAME            STATUS              AVAILABILITY        MANAGER STATUS
+viwovkb0bk0kxlk98r78apopo *   managernode            Ready               Active              Leader
+yf6nb2er69pydlp6drijdfmwd     workernode1            Ready               Active              
+yyavdslji7ovmw5fd3v7l62g8     workernode2            Ready               Active              
+
+If at any time, you lost your join token. You can be retrieved by running the following on Manager node:
+----------------------------------
+docker swarm join-token manager -q
+-----------------------------------
+===============================================================================================================================
+Deploy Service in Docker Swarm Mode
+================================================================================================================================
+
+-------------------------------------------------------------------
+docker service create -p 80:80 --name webservice --replicas 3 httpd
+-------------------------------------------------------------------
+Docker Swarm cluster is now ready. It's time to deploy service in Swarm Mode. Here, we will deploy a webserver service with three containers in Docker Swarm Mode.
+On the Manager node, run the following command to launch a webserver service:
+docker service create -p 80:80 --name webservice --replicas 3 httpd
+
+Output:
+
+bky6uhg2agdxeqgc2b1a5tcsm
+overall progress: 3 out of 3 tasks 
+1/3: running   [==================================================>] 
+2/3: running   [==================================================>] 
+3/3: running   [==================================================>] 
+verify: Service converged 
+
+The above command will create a service with name webservice and containers will be launched from docker image "httpd". containers are deployed across the cluster nodes such as, Managernode, Workernode1 and Workernode2.
+Now, you can list and check the status of the service with the following command:
+-------------------------------------------------------------------
+docker service ls
+-------------------------------------------------------------------
+Output:
+
+ID                  NAME                MODE                REPLICAS            IMAGE               PORTS
+bky6uhg2agdx        webservice          replicated          3/3                 httpd:latest        *:80->80/tcp
+-------------------------------------------------------------------
+docker service ps webservice
+-------------------------------------------------------------------
+Output:
+
+ID                  NAME                IMAGE               NODE                DESIRED STATE       CURRENT STATE       ERROR           PORTS
+xsa5wb0eg2ln        webservice.1        httpd:latest        managernode            Running             Running about a minute ago                                       
+3sbscs7m9lnh        webservice.2        httpd:latest        workernode2            Running             Running about a minute ago                                      
+yao2m5wi54kz        webservice.3        httpd:latest        workernode2            Running   
+
+Apache web service is now distributed across three node, you can access the web server by accessing any of Worker node and Manager node using your favorite web browser as follows:
+
+http://192.168.0.102
+http://192.168.0.103
+http://192.168.0.104
+=========================================
+Container Self Healing
+=========================================
+
+One of the important features of docker swarm mode is container self-healing. If any container goes down, it's automatically restarted on the same node or on a different node.
+
+To test container self-healing feature, let's remove the container from workernode2 and see whether a new container is launched or not.
+
+Before starting, you will need container ID in order to remove it. You can list out container ID by running the following command on Workernode2:
+
+docker ps
+
+Output:
+
+CONTAINER ID        IMAGE               COMMAND              CREATED             STATUS              PORTS               NAMES
+0dfc71537e18        httpd:latest        "httpd-foreground"   9 minutes ago       Up 9 minutes        80/tcp              webservice.3.yao2m5wi54kzs7iskefupuq6a
+9b01b0a55cb7        httpd:latest        "httpd-foreground"   9 minutes ago       Up 9 minutes        80/tcp              webservice.1.xsa5wb0eg2ln5bud1sbjf9e9e
+
+Now, remove container with ID 9b01b0a55cb7 by running the following command:
+
+docker rm 9b01b0a55cb7 -f
+
+Now verify the Service from Manager node and see whether a new container is started or not:
+
+docker service ps webservice
+
+You should see that one container is failed and another is started on workernode2 as shown below:
+
+ID                  NAME                IMAGE               NODE                DESIRED STATE       CURRENT STATE              ERROR                              PORTS
+z1spatkk1jj7        webservice.1        httpd:latest        workernode2            Running             Preparing 29 seconds ago                                      
+xsa5wb0eg2ln         \_ webservice.1    httpd:latest        workernode2            Shutdown            Failed 30 seconds ago      "task: non-zero exit (137)"        
+
+You can also scale up and down containers as per your requirements. For example, you can scale up the containers from 3 to 5 for the webservice using the following command on Manager node:
+
+docker service create -p 80:80 --name webservice --replicas 5 httpd
+
+You can check the status of the webservice with the following command on the Manager node:
+
+docker service ps webservice
+
+Output:
+
+ID                  NAME                IMAGE               NODE                DESIRED STATE       CURRENT STATE       ERROR           PORTS
+xsa5wb0eg2ln        webservice.1        httpd:latest        managernode            Running             Running about 10 minutes ago                                       
+3sbscs7m9lnh        webservice.2        httpd:latest        workernode2            Running             Running about 10 minutes ago                                      
+yao2m5wi54kz        webservice.3        httpd:latest        workernode2            Running             Running about 10 minutes ago                                 
+dfg2mswa52sf        webservice.4        httpd:latest        workernode1            Running             Running about 15 seconds ago                                 
+kah1j5hs14as        webservice.5        httpd:latest        workernode1            Running             Running about 15 seconds ago                                 
+
+In the above output, you should see that two new instances is started on workernode1.
+=======================
+Protecting Your Servers
+=======================
+
+After setting up your cluster of Docker nodes, it is a good idea to protect your servers by providing additional layers of security. A security solution consisting of both monitoring and firewall capabilities is a good place to start.
+Alibaba Cloud Web Application Firewall (WAF) can be used to provide protection against web-based attacks, including SQL injections, Cross-site scripting (XSS), Malicious BOT, command execution vulnerabilities, and other common web attacks. WAF filters out a large number of malicious access attempts and alleviates the performance impact of Hypertext Transfer Protocol (HTTP)/HTTP Secure (HTTPS) flood attacks on servers.
+CloudMonitor by Alibaba Cloud can be used to provide in-depth insights into your cloud deployments. CloudMonitor provides advanced analytics on critical metrics such as Central Processing Unit (CPU) utilization, latency and also lets you customize parameters specific to business requirements.
+
 
 
 
