@@ -1,0 +1,191 @@
+By default, Docker waits 10 seconds for the container to exit before sending SIGKILL.
+------------------------------------------------------------------------------------
+version: "3.7"
+services:
+  alpine:
+    image: alpine:3.8
+    command: sleep 600
+    stop_grace_period: 0s
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+t 0 specifies that docker-compose must wait zero seconds before killing the container - if it does not die gracefully in that time.
+ The default value for that timeout is 10 seconds.
+ So every time I do a docker-compose up I / we have to wait 10 seconds (default) before it is finally killed and then brought back up again
+ ---------------------------------------------------------------------------------------------------------------------------------------------
+  docker-compose up -d  or docker-compose up -d -t 0 
+ ------------------
+ sysctls
+ ------------------
+ docker-compose up -d -t 0 
+ docker exec -it compose-tuts_alpine_1 /bin/sh
+cat /proc/sys/net/core/somaxconn
+cat /proc/sys/kernel/msgmax
+cat /proc/sys/kernel/shmmax
+Now we are going to modify these 3 parameters
+
+version: "3.7"
+services:
+  alpine:
+
+    image: alpine:3.8
+
+    command: sleep 600
+
+    sysctls:
+
+      net.core.somaxconn: 512
+      kernel.shmmax:  18102030100020003000
+      kernel.msgmax:  4000 
+
+ docker-compose up -d -t 0 
+ docker exec -it compose-tuts_alpine_1 /bin/sh
+cat /proc/sys/net/core/somaxconn
+cat /proc/sys/kernel/msgmax
+cat /proc/sys/kernel/shmmax	  
+-------------------------
+namespaced sysctls
+-------------------------
+
+CURRENTLY SUPPORTED SYSCTLS
+kernel.msgmax, kernel.msgmnb, kernel.msgmni, kernel.sem,
+kernel.shmall, kernel.shmmax, kernel.shmmni, kernel.shm_rmid_forced
+Sysctls beginning with fs.mqueue.*
+Sysctls beginning with net.*
+------------
+ulimits
+-------------
+
+version: "3.7"
+services:
+  alpine:
+
+    image: alpine:3.8
+
+    command: sleep 60171
+
+    stop_grace_period: 0s
+
+    ulimits:
+     nproc: 2
+
+     nofile:
+      soft: 2
+      hard: 4
+
+docker-compose up -d -t 0
+
+fail
+
+Change the nproc ( number of processes to 1. Change both nofile limits to 40 or more.
+
+run docker-compose up -d -t 0
+
+version: "3.7"
+services:
+  alpine:
+
+    image: alpine:3.8
+
+    command: sleep 60171
+
+    stop_grace_period: 0s
+
+    ulimits:
+     fsize: 10
+-----------------
+configs
+-----------------
+
+Configs declare configuration files for applications inside your containers need. Configuration files like those normally found inside /etc
+You should only store non-sensitive information in these configs. docker-compose secrets are there to store secret information.
+First we need to create a small 2 config files so that we can refer to it in our docker-compose.yml
+
+First we create the first config file:
+
+nano config_data
+
+'# config data
+
+Now create the second config file:
+
+nano my_second_config.config
+
+'# my_second_config.config contents
+
+Now we need Docker to create this SECOND FILE ONLY as a config named: my_second_configF
+
+docker config create my_second_config my_second_config.config
+	
+docker swarm init
+
+docker stack deploy -c docker-compose.yml  mystack
+
+docker ps -a
+
+	
+Note that my_second_config is defined as: external: true. It exists as a config object in Docker.
+
+docker-compose up does not support 'configs' configuration. We must use docker stack deploy to deploy to a swarm.
+
+docker swarm init
+
+docker stack deploy -c docker-compose.yml  mystack
+
+docker ps -a	 
+
+version: "3.7"
+services:
+  alpine:
+    image: alpine:3.8
+    command: sleep 600
+
+    configs:
+      - source: my_first_config
+        target: /etc/my_first_config
+
+      - source: my_second_config
+        target: /opt/my_second_config
+
+configs:
+
+  my_first_config:
+    file: ./config_data
+
+  my_second_config:
+    external: true 
+	
+docker exec -it mystack_alpine.1.mystack_alpine.1.tzirryqjnqdvqo0nv6mw8dzr7  /bin/sh
+cat /etc/my_first_config
+cat /opt/my_second_config
+---------------
+secrets
+--------------
+docker-compose down -t 0
+docker stack rm mystack
+docker container prune -f
+
+echo a secret password | docker secret create my_secret -
+
+	
+docker stack deploy -c docker-compose.yml  mystack
+
+version: "3.7"
+services:
+  alpine:
+    image: alpine:3.8
+    command: sleep 600
+
+    secrets:
+      - my_secret
+
+secrets:
+
+    my_secret:
+      external: true
+	  
+docker stack deploy -c docker-compose.yml  mystack
+docker exec -it mystack_alpine.1.xrgtrrfnwn2qet5pevj5n9wne /bin/sh
+cat /run/secrets/my_secret	  
+df -h
+docker inspect my_secret
+docker secret ls
